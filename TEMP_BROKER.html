@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MegaServe - Trading Algorithms</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: hsl(215, 85%, 20%);
+      --primary-soft: hsl(203, 100%, 96%);
+      --secondary: hsl(172, 66%, 50%);
+      --danger: hsl(26, 69%, 55%); 
+      --bg: hsl(210, 40%, 98%);
+      --text: hsl(215, 85%, 20%);
+      --border: hsl(210, 31%, 91%);
+      --card: #ffffff;
+      --muted: hsl(210, 40%, 96%);
+      --muted-foreground: hsl(215, 16%, 47%);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem 1rem;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; }
+
+    h1 { text-align: center; font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; color: var(--primary); margin-bottom: 1rem; }
+    .intro { text-align: center; max-width: 900px; margin: 0 auto 1.5rem; color: var(--muted-foreground); font-size: 1.1rem; }
+
+    .btn-container { text-align: center; margin-bottom: 2rem; }
+    .know-more-btn {
+      display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem;
+      background: white; color: var(--secondary); border: 2px solid var(--secondary);
+      border-radius: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease;
+    }
+    .know-more-btn:hover { background: var(--secondary); color: white; transform: translateY(-2px); }
+
+    .tabs { display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 2rem; }
+    .tab-btn {
+      padding: 0.9rem 1.8rem; font-weight: 700; border: 2px solid var(--primary);
+      background: white; color: var(--primary); border-radius: 0.75rem; cursor: pointer;
+      transition: all 0.3s ease; white-space: nowrap;
+    }
+    .tab-btn.overnight { border-color: var(--danger); color: var(--danger); }
+    .tab-btn.active { background: var(--primary); color: white; }
+    .tab-btn.overnight.active { background: var(--danger); border-color: var(--danger); }
+
+    /* TABLE - NO HORIZONTAL SCROLL */
+    .table-container { display: none; background: var(--card); border-radius: 1rem; overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid var(--border); margin-bottom: 2rem; }
+    .table-container.active { display: block; }
+
+    .table-header { padding: 1.5rem; text-align: center; font-size: 1.5rem; font-weight: 700; color: white; }
+    .intraday-header { background: var(--primary); }
+    .overnight-header { background: var(--danger); }
+
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; min-width: 0; table-layout: auto; border-collapse: collapse; }
+    th, td { padding: 1rem 0.7rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.95rem; white-space: nowrap; }
+    th:nth-child(3), td:nth-child(3) { white-space: normal; min-width: 130px; }
+    thead { background: var(--muted); }
+    th { color: var(--primary); font-weight: 700; font-size: 0.75rem; text-transform: uppercase; }
+    tbody tr:hover { background: rgba(210, 231, 250, 0.3); }
+
+    .more-btn {
+      padding: 0.5rem 1.1rem; background: var(--secondary); color: white; border: none;
+      border-radius: 999px; font-weight: 600; font-size: 0.85rem; cursor: pointer;
+    }
+    .more-btn:hover { background: #16a34a; transform: translateY(-2px); }
+
+    /* MODALS - base */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(12px);
+      align-items: center; justify-content: center; z-index: 9999; padding: 1rem; -webkit-overflow-scrolling: touch; }
+    .modal.active { display: flex; }
+
+    .modal-card { background: white; border-radius: 1.2rem; max-width: 95vw; max-height: 92vh; overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.35); animation: slideUp 0.5s ease; display: flex; flex-direction: column; }
+
+    .modal-header { padding: 1.5rem; background: linear-gradient(135deg, #f0fdfa, #ccfbf1); position: relative; }
+    .close-modal { position: absolute; top: 0.75rem; right: 0.75rem; background: rgba(0,0,0,0.1); color: #333;
+      width: 36px; height: 36px; border-radius: 50%; border: none; font-size: 1.5rem; cursor: pointer; }
+    .modal-title { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+    .subscribe-top-btn { background: var(--secondary); color: white; padding: 0.6rem 1.2rem; border: none;
+      border-radius: 0.65rem; font-weight: 700; cursor: pointer; margin-top: 0.5rem; }
+
+    .modal-body { padding: 1.5rem; overflow-y: auto; flex-grow: 1; }
+    .section-title { font-weight: 700; margin: 1rem 0 0.5rem; }
+    .feature-list li { padding: 0.4rem 0; display: flex; gap: 0.75rem; }
+    .feature-list li::before { content: "•"; color: var(--secondary); font-weight: bold; }
+
+    .metrics-table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    .metrics-table td { padding: 0.75rem; border-bottom: 1px solid #e2e8f0; }
+    .metrics-table td:last-child { text-align: right; font-weight: 700; color: var(--primary); }
+
+    .disclaimer { margin-top: 1rem; padding: 0.8rem; background: #fef3c7; border-radius: 0.75rem;
+      font-size: 0.8rem; color: #92400e; }
+
+    @keyframes slideUp { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    /* ----- DOUBLE LAYERING MODAL: responsive, scrollable inner ----- */
+    /* Make modal-card scrollable on small screens and allow inner scrolling on touch devices */
+    .double-layering-modal .modal-card {
+      max-width: 1100px;
+      background: transparent;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.22);
+    }
+
+    .double-card-inner {
+      background: white;
+      padding: 2.5rem;
+      border-radius: 1.5rem;
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+      max-height: calc(92vh - 4rem);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .double-title {
+      font-size: 2.4rem;
+      font-weight: 800;
+      text-align: center;
+      background: linear-gradient(90deg, var(--primary), #6b46c1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    .double-subtitle {
+      text-align: center;
+      font-size: 1.15rem;
+      color: var(--primary);
+      margin-bottom: 2rem;
+    }
+
+    /* Terms & Conditions Sub-Card */
+.tnc-card {
+  background: #fff7eb;
+  border: 1px solid #ffecb5;
+  padding: 1rem 1.2rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #b45309;
+  font-weight: 500;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  margin-top: 1.2rem;
+}
+
+/* Optional improvement for mobile spacing */
+@media (max-width: 768px) {
+  .tnc-card {
+    text-align: center;
+    font-size: 0.88rem;
+  }
+}
+
+
+    .layers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .layer {
+      background: #f8f9ff;
+      padding: 1.8rem;
+      border-radius: 1.2rem;
+      border: 2px solid #e0d4ff;
+    }
+
+    .layer.left { border-left: 5px solid var(--primary); }
+    .layer.right { border-left: 5px solid var(--secondary); background: #f0fdfa; }
+
+    .layer h4 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      color: var(--primary);
+    }
+
+    .layer.right h4 { color: var(--secondary); }
+
+    .layer ul {
+      list-style: none;
+      padding: 0;
+      font-size: 1.02rem;
+      line-height: 1.8;
+    }
+
+    .layer ul li::before {
+      content: "✓";
+      color: var(--secondary);
+      font-weight: bold;
+      margin-right: 0.7rem;
+    }
+
+    .sim-card {
+      background: white;
+      padding: 2rem;
+      border-radius: 1.2rem;
+      border: 2px solid #e0d4ff;
+      margin: 2rem 0;
+    }
+
+    .sim-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 1.2rem;
+      text-align: center;
+    }
+
+    /* Responsive sim-list that avoids overflow */
+    .sim-list { display:flex; flex-direction:column; gap:0.6rem; }
+    .sim-row { display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:0.5rem 0; border-bottom:1px dashed #eee; }
+    .sim-row:last-child { border-bottom:none; }
+    .scenario { font-size:1.02rem; color:var(--primary); word-break:break-word; flex:1 1 auto; }
+    .value { font-weight:700; color:var(--secondary); white-space:nowrap; flex:0 0 auto; margin-left:0.6rem; }
+
+    .footnote {
+      font-size: 0.88rem;
+      color: #666;
+      margin-top: 1rem;
+      font-style: italic;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      #subscribeFormModal .modal-card {
+        width: 95% !important;
+        max-width: 95% !important;
+        border-radius: 0.8rem;
+      }
+      #subscribeFormModal .modal-body {
+        max-height: 80vh;
+      }
+    }
+
+    .tnc {
+      text-align: center;
+      color: var(--danger);
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-top: 2rem;
+    }
+
+
+    /* Mobile Card Styling for Table Rows */
+  @media (max-width: 768px) {
+    table, thead, tbody, th, td, tr {
+      display: block;
+    }
+
+    thead {
+      display: none;
+    }
+
+  tbody tr {
+    background: #ffffff;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border);
+  }
+
+  td {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.6rem 0;
+    border: none !important;
+    font-size: 0.9rem;
+    white-space: normal;
+  }
+
+  td strong {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary);
+  }
+
+  /* Best final alignment for performance cards (mobile) */
+@media (max-width: 768px) {
+  .metrics-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 0.8rem;
+  }
+
+  .metrics-table tr {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .metrics-table td {
+    border: none;
+    padding: 0;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+
+
+  /* Fix double 'More' label in mobile view */
+@media (max-width: 768px) {
+  td[data-label="More"]::before {
+    content: none !important; /* Hide the label */
+  }
+
+  td[data-label="More"] {
+    display: flex;
+    justify-content: center;
+    padding-top: 0.6rem;
+  }
+
+  td[data-label="More"] .more-btn {
+    width: 100%;
+    max-width: 250px;
+    text-align: center;
+  }
+}
+
+  .metrics-table td:first-child {
+    color: var(--muted-foreground);
+    font-weight: 600;
+  }
+
+  .metrics-table td:last-child {
+    color: var(--primary);
+    font-weight: 700;
+  }
+}
+
+  td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--muted-foreground);
+    text-transform: capitalize;
+  }
+
+  /* Improve button alignment */
+  td[data-label="More"] {
+    justify-content: center;
+    margin-top: 0.6rem;
+  }
+
+  .more-btn {
+    width: 100%;
+    padding: 0.65rem;
+    font-size: 0.9rem;
+    border-radius: 8px;
+  }
+}
+
+.modal-title-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
+
+.subscribe-top-btn {
+  margin-top: 0 !important;
+  white-space: nowrap;
+}
+
+/* Ensure close button stays separate */
+.close-modal {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 10;
+}
+
+/* Mobile responsive fix */
+@media (max-width: 768px) {
+  .modal-title-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .subscribe-top-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* Prevent button from going under the close button */
+.modal-header {
+  padding-right: 4rem; /* Extra space on right for close button */
+  position: relative;
+}
+
+/* Flex title + subscribe button container */
+.modal-title-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
+
+.subscribe-top-btn {
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+/* Position close button properly */
+.close-modal {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 10;
+}
+
+/* Mobile adjustment */
+@media (max-width: 768px) {
+  .modal-header {
+    padding-right: 1rem; /* Less padding on small screens */
+  }
+
+  .modal-title-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .subscribe-top-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* iOS Fixes */
+.more-btn {
+  cursor: pointer !important;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.modal, .modal-card {
+  -webkit-overflow-scrolling: touch;
+  pointer-events: auto;
+}
+
+tbody tr {
+  pointer-events: auto;
+}
+
+.modal {
+  position: fixed !important;
+  z-index: 99999 !important;
+}
+
+#subscribeFormModal {
+  z-index: 200000 !important;
+}
+
+
+    @media (max-width: 768px) {
+      .layers { grid-template-columns: 1fr; }
+      .double-title { font-size: 2rem; }
+      .double-card-inner { padding: 1.2rem; }
+      .sim-card { padding: 1rem; }
+      .algo-table { font-size: 0.95rem; }
+      .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      th, td { padding: 0.8rem 0.5rem; font-size: 0.88rem; }
+    }
+
+    /* ensure modal body children don't cause horizontal overflow */
+    .double-card-inner img, .double-card-inner table { max-width:100% }
+
+    /* lock body when modal open */
+    html.modal-open, body.modal-open { height:100%; overflow:hidden; }
+
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Our Trading Algorithms</h1>
+  <p class="intro">Choose your preferred style — zero overnight risk or higher reward with controlled exposure.</p>
+
+  <!-- <div class="btn-container">
+    <button class="know-more-btn" onclick="openDoubleLayering()">Know More: Double Layering Strategy</button>
+  </div> -->
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('intraday')">Intraday Strategies</button>
+    <button class="tab-btn overnight" onclick="showTab('overnight')">Overnight Strategies</button>
+  </div>
+
+  <!-- Intraday Table -->
+  <div id="intraday" class="table-container active">
+    <div class="table-header intraday-header">Intraday Strategies (Same-Day Exit)</div>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr>
+          <th>Algo Name</th><th>Provider</th><th>Description</th><th>Min Capital</th><th>Max Drawdown</th><th>More</th>
+        </tr></thead>
+       <tbody>
+  <tr>
+    <td data-label="Algo Name"><strong>ALGO 1</strong></td>
+    <td data-label="Provider"><strong>MegaServe</strong></td>
+    <td data-label="Description">ATM+OTM Option Selling</td>
+    <td data-label="Min Capital">₹80 Lakhs</td>
+    <td data-label="Max Drawdown">10–12%</td>
+    <td data-label="More">
+      <button class="more-btn" onclick="openAlgoModal('algo1')">More</button>
+    </td>
+  </tr>
+
+  <tr>
+    <td data-label="Algo Name"><strong>ALGO 102</strong></td>
+    <td data-label="Provider"><strong>MegaServe</strong></td>
+    <td data-label="Description">Premium Decay Focused</td>
+    <td data-label="Min Capital">₹1 Crore</td>
+    <td data-label="Max Drawdown">8–10%</td>
+    <td data-label="More">
+      <button class="more-btn" onclick="openAlgoModal('a102')">More</button>
+    </td>
+  </tr>
+
+  <tr>
+    <td data-label="Algo Name"><strong>ALGO 2</strong></td>
+    <td data-label="Provider"><strong>MegaServe</strong></td>
+    <td data-label="Description">ITM + ATM Hybrid</td>
+    <td data-label="Min Capital">₹1.2 Crores</td>
+    <td data-label="Max Drawdown">12–14%</td>
+    <td data-label="More">
+      <button class="more-btn" onclick="openAlgoModal('algo2')">More</button>
+    </td>
+  </tr>
+
+  <tr>
+    <td data-label="Algo Name"><strong>ALGO 7</strong></td>
+    <td data-label="Provider"><strong>MegaServe</strong></td>
+    <td data-label="Description">High-Conviction ITM</td>
+    <td data-label="Min Capital">₹1.5 Crores</td>
+    <td data-label="Max Drawdown">10–12%</td>
+    <td data-label="More">
+      <button class="more-btn" onclick="openAlgoModal('algo7')">More</button>
+    </td>
+  </tr>
+
+  <tr>
+    <td data-label="Algo Name"><strong>ALGO 15</strong></td>
+    <td data-label="Provider"><strong>MegaServe</strong></td>
+    <td data-label="Description">Full Week Directional</td>
+    <td data-label="Min Capital">₹80 Lakhs</td>
+    <td data-label="Max Drawdown">8–10%</td>
+    <td data-label="More">
+      <button class="more-btn" onclick="openAlgoModal('algo15')">More</button>
+    </td>
+  </tr>
+</tbody>
+
+      </table>
+    </div>
+  </div>
+
+  <!-- Overnight Table -->
+  <div id="overnight" class="table-container">
+    <div class="table-header overnight-header">Overnight Strategies (Higher Theta)</div>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr>
+          <th>Algo Name</th><th>Provider</th><th>Description</th><th>Min Capital</th><th>Max Drawdown</th><th>More</th>
+        </tr></thead>
+        <tbody>
+  <tr>
+    <td data-label="Algo Name"><strong>ALGO 8</strong></td>
+    <td data-label="Provider"><strong>MegaServe</strong></td>
+    <td data-label="Description">Overnight 1DTE Carry</td>
+    <td data-label="Min Capital">₹1 Crore</td>
+    <td data-label="Max Drawdown">12–15%</td>
+    <td data-label="More"><button class="more-btn" onclick="openAlgoModal('algo8')">More</button></td>
+  </tr>
+
+  <tr>
+    <td data-label="Algo Name"><strong>ALGO 19</strong></td>
+    <td data-label="Provider"><strong>MegaServe</strong></td>
+    <td data-label="Description">Delta Neutral Carry</td>
+    <td data-label="Min Capital">₹1.5 Crores</td>
+    <td data-label="Max Drawdown">6–8%</td>
+    <td data-label="More"><button class="more-btn" onclick="openAlgoModal('algo19')">More</button></td>
+  </tr>
+</tbody>
+
+      </table>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- SUBSCRIBE FORM MODAL -->
+<div class="modal" id="subscribeFormModal" style="z-index: 99999;">
+  <div class="modal-card" style="max-width: 500px; width: 95%; border-radius: 1rem;">
+    <div class="modal-header" style="position: relative;">
+      <button class="close-modal" onclick="closeSubscribeForm()">×</button>
+      <h2 class="modal-title">Subscribe to <span id="algoNameInForm"></span></h2>
+    </div>
+
+    <div class="modal-body" style="overflow-y: auto; max-height: 70vh;">
+      <form id="subscribeForm">
+
+        <label>Name *</label>
+        <input type="text" id="subName" required placeholder="Your Name"
+          style="width:100%;padding:0.6rem;margin-bottom:0.7rem;border:1px solid var(--border);border-radius:8px;">
+
+        <label>Email *</label>
+        <input type="email" id="subEmail" required placeholder="you@domain.com"
+          style="width:100%;padding:0.6rem;margin-bottom:0.7rem;border:1px solid var(--border);border-radius:8px;">
+
+        <label>Select Duration *</label>
+        <div style="display:flex; gap:0.5rem; margin-bottom:0.7rem;">
+          <input type="date" id="subFromDate" required
+            style="flex:1;padding:0.6rem;border:1px solid var(--border);border-radius:8px;">
+          <input type="date" id="subToDate"
+            style="flex:1;padding:0.6rem;border:1px solid var(--border);border-radius:8px;">
+        </div>
+
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;">
+          <input type="checkbox" id="termsCheckbox" required>
+          <label for="termsCheckbox" style="font-size:0.9rem;">
+            I agree to the 
+            <a href="#" onclick="openTerms()" style="color:var(--secondary);text-decoration:underline;">Terms & Conditions</a>
+
+          </label>
+        </div>
+
+        <button type="button" class="more-btn" onclick="submitSubscription()">Subscribe</button>
+      </form>
+
+      <div id="successMessage"
+        style="display:none; margin-top:1rem; padding:0.7rem; background:#dcfce7; color:#166534; border-radius:8px; font-weight:600;">
+        🎉 Subscribed successfully!
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TERMS & CONDITIONS MODAL -->
+<div class="modal" id="termsModal" style="z-index:200000;">
+  <div class="modal-card" style="max-width:650px; width:95%; border-radius:1rem;">
+    <div class="modal-header" style="background:#fef2f2;">
+      <button class="close-modal" onclick="closeTerms()">×</button>
+      <h2 class="modal-title" style="color:#b91c1c;">Terms & Conditions</h2>
+    </div>
+    <div class="modal-body" style="max-height:75vh; overflow-y:auto;">
+      <p style="font-size:0.95rem; line-height:1.6;">
+        <strong>Expected Returns:</strong> Returns shown are based on historical data. Actual results may vary.<br><br>
+        <strong>No Profit Guarantee:</strong> Past performance does not guarantee future results.<br><br>
+        <strong>Risk Warning:</strong> Trading involves substantial financial risk, including loss of capital.<br><br>
+        <strong>User Responsibility:</strong> Strategies are for research purposes. You are responsible for trading decisions.<br><br>
+        <strong>Seek Advice:</strong> Consult a financial advisor before investing.<br><br>
+        <strong>Legal Disclaimer:</strong> MegaServe is not liable for trading losses.<br><br>
+        By continuing, you agree to these terms.
+      </p>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Algo Details Modal -->
+<div class="modal" id="algoModal" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalAlgoName">
+
+    <div class="modal-header">
+      <button class="close-modal" onclick="closeAlgoModal()">×</button>
+
+      <!-- Flex Title + Subscribe Button -->
+      <div class="modal-title-container">
+        <h2 class="modal-title" id="modalAlgoName"></h2>
+        <button class="subscribe-top-btn" id="subscribeTop" onclick="openSubscribeCard()">
+          Subscribe to <span id="modalAlgoNameBtn"></span>
+        </button>
+      </div>
+
+      <p style="margin-top:0.5rem; color:#1e293b;" id="modalSubtitle"></p>
+    </div>
+
+    <div class="modal-body">
+      <div class="section-title">Strategy:</div>
+      <p id="modalDescription"></p>
+
+      <div class="section-title">Key Features:</div>
+      <ul class="feature-list" id="modalFeatures"></ul>
+
+      <div class="section-title">Performance Metrics:</div>
+      <table class="metrics-table" id="modalMetrics"></table>
+
+      <!-- Small Subscribe Card Inside Modal -->
+      <div id="subscribeCard" style="display:none; margin-top:1rem; padding:0.9rem; border-radius:0.75rem; border:1px dashed var(--border);">
+        <label style="display:block; font-weight:700; margin-bottom:0.4rem;">Enter your email</label>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <input id="subscribeEmail" type="email" placeholder="you@domain.com" style="flex:1; padding:0.6rem; border-radius:8px; border:1px solid var(--border);">
+          <button class="more-btn" onclick="confirmSubscribe()">Subscribe</button>
+        </div>
+      </div>
+
+      <div class="disclaimer">
+        <strong>Disclaimer:</strong> Past performance is not indicative of future results. Trading involves substantial risk of loss.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- DOUBLE LAYERING MODAL -->
+<div class="modal double-layering-modal" id="doubleLayeringModal" aria-hidden="true">
+  <div class="modal-card">
+    <div style="padding: 2.5rem 2rem 2rem; position: relative; background: linear-gradient(135deg, #faf8ff 0%, #f5f3ff 100%); border-radius: 1.5rem;">
+      <button class="close-modal" onclick="closeDoubleLayering()">×</button>
+
+      <div class="double-card-inner">
+        <!-- Title -->
+        <h2 class="double-title">DOUBLE LAYERING – COMPOUND YOUR WEALTH</h2>
+        <p class="double-subtitle">
+          <strong style="color: var(--primary);">No Guarantee of any sort for returns!</strong>
+        </p>
+
+        <!-- Two Layers -->
+        <div class="layers">
+          <div class="layer left">
+            <h4>LAYER 1: Existing Portfolio</h4>
+            <ul>
+              <li>Mutual Funds, Shares, FD, SGB, Silverbees, etc.</li>
+              <li>Already earning <strong>12–15% p.a.</strong></li>
+              <li><strong>Pledge</strong> → Unlock <strong>80–90% Interest-Free Margin</strong></li>
+            </ul>
+          </div>
+
+          <div class="layer right">
+            <h4>LAYER 2: Intraday Algo Boost</h4>
+            <ul>
+              <li>Automated MFT/LFT: Arbitrage, Directional</li>
+              <li><strong>Extra 16–20% p.a.</strong> (post-fee, pre-tax)</li>
+              <li>Exit within the day → <strong>Zero overnight risk</strong></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Compounding Simulation -->
+        <div class="sim-card">
+          <div class="sim-title">10-Year Compounding Simulation (₹1 Cr Start)</div>
+
+          <div class="sim-list">
+            <div class="sim-row"><div class="scenario">Only MF @12% CAGR</div><div class="value">₹3.11 Cr</div></div>
+            <div class="sim-row"><div class="scenario">MF + Algo @22% CAGR</div><div class="value">₹7.30 Cr</div></div>
+            <div class="sim-row"><div class="scenario">MF + Algo @24% CAGR</div><div class="value">₹8.59 Cr</div></div>
+            <div class="sim-row"><div class="scenario">MF + Algo @26% CAGR</div><div class="value">₹10.09 Cr</div></div>
+          </div>
+
+          <p class="footnote">
+            90:10 MF:Cash margin • 16–20% algo return (post-fee, pre-tax) • 30% tax on algo → 11–14% net CAGR
+          </p>
+        </div>
+
+        <!-- Final Note -->
+        <div class="tnc-card">
+        <strong>Terms & Conditions:</strong> Expected returns, no profit guarantee, trading involves substantial risk.
+      </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Data
+  const algoData = {
+    algo1: { title: "ALGO 1", subtitle: "ATM+OTM Option Selling (Delta Neutral + Directional)", description: "Combines delta-neutral positioning with directional bias for balanced risk-reward.", features: ["Dynamic delta hedging","ATM and OTM option selling","Real-time risk management","Intraday position closure"], stats: {"Expected Return":"18-22% p.a.","Max Drawdown":"10-12%","Win Rate":"68-72%","Min Capital":"₹80 Lakhs"} },
+    a102: { title: "A102", subtitle: "Premium Decay Focused ATM+OTM Selling", description: "Optimizes theta decay by strategically selling ATM and OTM options.", features: ["Premium decay optimization","Volatility-based strike selection","Automated profit booking"], stats: {"Expected Return":"16-20% p.a.","Max Drawdown":"8-10%","Win Rate":"70-75%","Min Capital":"₹1 Crore"} },
+    algo2: { title: "ALGO 2", subtitle: "ITM Directional + ATM Smart Non-Directional", description: "Hybrid approach combining ITM directional trades with ATM non-directional strategies.", features: ["ITM intrinsic value capture","ATM premium collection","Adaptive market regime detection"], stats: {"Expected Return":"20-24% p.a.","Max Drawdown":"12-14%","Win Rate":"65-70%","Min Capital":"₹1.2 Crores"} },
+    algo7: { title: "ALGO 7", subtitle: "High-Conviction ITM + ATM Hybrid", description: "High-conviction trades using ITM options combined with ATM hedging.", features: ["Machine learning signal generation","Smart position scaling"], stats: {"Expected Return":"22-26% p.a.","Max Drawdown":"10-12%","Win Rate":"72-76%","Min Capital":"₹1.5 Crores"} },
+    algo15: { title: "ALGO 15", subtitle: "Full Week Intraday Directional Selling", description: "Consistent intraday directional option selling throughout the week.", features: ["Daily directional signals","Intraday-only exposure"], stats: {"Expected Return":"18-22% p.a.","Max Drawdown":"8-10%","Win Rate":"65-70%","Min Capital":"₹80 Lakhs"} },
+    algo8: { title: "ALGO 8", subtitle: "Overnight 1DTE Carry", description: "Optimized overnight carry strategy using 1-day-to-expiry options.", features: ["1DTE premium capture","Gap risk mitigation"], stats: {"Expected Return":"24-28% p.a.","Max Drawdown":"12-15%","Win Rate":"75-80%","Min Capital":"₹1 Crore"} },
+    algo19: { title: "ALGO 19", subtitle: "Delta Neutral + Overnight Carry", description: "Market-neutral delta hedging combined with overnight carry.", features: ["Zero delta maintenance","Gamma scalping opportunities"], stats: {"Expected Return":"16-20% p.a.","Max Drawdown":"6-8%","Win Rate":"78-82%","Min Capital":"₹1.5 Crores"} }
+  };
+
+  // Tabs
+  function showTab(tab) {
+    document.querySelectorAll('.table-container').forEach(t => t.classList.remove('active'));
+    document.getElementById(tab).classList.add('active');
+    const buttons = Array.from(document.querySelectorAll('.tab-btn'));
+    buttons.forEach((b,i) => {
+      // first button -> intraday, second -> overnight
+      if (tab === 'intraday') {
+        b.classList.toggle('active', i===0);
+      } else {
+        b.classList.toggle('active', i===1);
+      }
+    });
+  }
+
+
+// Fix for iOS touch not triggering click
+document.querySelectorAll(".more-btn").forEach(btn => {
+  btn.addEventListener("touchstart", () => btn.click());
+});
+
+
+  function openSubscribeCard() {
+  let algoName = document.getElementById('modalAlgoName').textContent;
+
+  // Close the algo modal first
+  closeAlgoModal();
+
+  // Now open the subscribe modal
+  document.getElementById('algoNameInForm').textContent = algoName;
+  document.getElementById('subscribeFormModal').classList.add('active');
+}
+
+function closeSubscribeForm() {
+  document.getElementById('subscribeFormModal').classList.remove('active');
+}
+
+function submitSubscription() {
+  let name = document.getElementById('subName').value.trim();
+  let email = document.getElementById('subEmail').value.trim();
+  let fromDate = document.getElementById('subFromDate').value;
+  let toDate = document.getElementById('subToDate').value;
+  let termsAccepted = document.getElementById('termsCheckbox').checked;
+
+  // Create or get error message box
+  let errorBox = document.getElementById("formError");
+  if (!errorBox) {
+    errorBox = document.createElement("div");
+    errorBox.id = "formError";
+    errorBox.style.display = "none";
+    errorBox.style.background = "#FEE2E2";
+    errorBox.style.color = "#DC2626";
+    errorBox.style.padding = "0.6rem 1rem";
+    errorBox.style.borderRadius = "8px";
+    errorBox.style.fontSize = "0.85rem";
+    errorBox.style.marginBottom = "0.8rem";
+    errorBox.style.fontWeight = "600";
+    document.querySelector("#subscribeForm").insertBefore(errorBox, document.querySelector("#subscribeForm button"));
+  }
+
+  // Validate fields
+  if (!name || !email || !fromDate) {
+    errorBox.innerText = "⚠ Please fill all required fields.";
+    errorBox.style.display = "block";
+    return;
+  }
+
+  if (toDate && new Date(fromDate) > new Date(toDate)) {
+    errorBox.innerText = "⚠ End date must be after start date.";
+    errorBox.style.display = "block";
+    return;
+  }
+
+  if (!termsAccepted) {
+    errorBox.innerText = "⚠ You must agree to the Terms & Conditions.";
+    errorBox.style.display = "block";
+    return;
+  }
+
+  // If all good, hide error
+  errorBox.style.display = "none";
+
+  // Show success
+  document.getElementById('successMessage').style.display = 'block';
+
+  // Auto close modal
+  setTimeout(() => {
+    document.getElementById('successMessage').style.display = 'none';
+    closeSubscribeForm();
+  }, 1500);
+}
+
+// Close modal when clicking outside
+document.getElementById('subscribeFormModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeSubscribeForm();
+});
+
+
+  // Algo Modal functionality
+  function openAlgoModal(id) {
+  const algo = algoData[id];
+  document.getElementById('modalAlgoName').textContent = algo.title;
+  document.getElementById('modalAlgoNameBtn').textContent = algo.title;
+  document.getElementById('modalSubtitle').textContent = algo.subtitle;
+  document.getElementById('modalDescription').textContent = algo.description;
+  document.getElementById('modalFeatures').innerHTML = algo.features.map(f => `<li>${f}</li>`).join('');
+  let rows = '';
+  for (const [k,v] of Object.entries(algo.stats)) rows += `<tr><td>${k}:</td><td>${v}</td></tr>`;
+  document.getElementById('modalMetrics').innerHTML = rows;
+  document.getElementById('algoModal').classList.add('active');
+}
+
+function closeAlgoModal() { document.getElementById('algoModal').classList.remove('active'); }
+function subscribeAlgo() { alert('Subscription process started for ' + document.getElementById('modalAlgoName').textContent); }
+
+function openDoubleLayering() {
+    document.getElementById('doubleLayeringModal').classList.add('active');
+  }
+
+  function closeDoubleLayering() {
+    document.getElementById('doubleLayeringModal').classList.remove('active');
+  }
+  function lockBodyScroll(lock) {
+  if (lock) {
+    // remember scroll position
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.body.style.height = '100%';
+  } else {
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    document.body.style.height = '';
+  }
+}
+
+function openDoubleLayering() {
+  document.getElementById('doubleLayeringModal').classList.add('active');
+  lockBodyScroll(true);
+}
+
+function closeDoubleLayering() {
+  document.getElementById('doubleLayeringModal').classList.remove('active');
+  lockBodyScroll(false);
+}
+
+// Also call lockBodyScroll(false) when modal closed by backdrop click
+document.getElementById('doubleLayeringModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) {
+    closeDoubleLayering();
+  }
+});
+
+
+function openTerms() {
+  document.getElementById("termsModal").classList.add("active");
+}
+
+function closeTerms() {
+  document.getElementById("termsModal").classList.remove("active");
+}
+
+document.getElementById("termsModal").addEventListener("click", e => {
+  if (e.target === e.currentTarget) closeTerms();
+});
+
+  // Close on backdrop click (already in your code, just make sure this runs)
+  document.getElementById('doubleLayeringModal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeDoubleLayering();
+  });
+// Close on backdrop click
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); }));
+</script>
+
+</body>
+</html>
