@@ -13,7 +13,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Load HTML
-html_file = pathlib.Path("C:\\Users\\admin\\Downloads\\page\\TEMP_BROKER.html").read_text(encoding="utf-8")
+html_file = pathlib.Path("TEMP_BROKER.html").read_text(encoding="utf-8")
 
 # Render
 st.components.v1.html(html_file, height=1000, scrolling=False)
+
